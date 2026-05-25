@@ -1,0 +1,103 @@
+{
+
+	"name" : "Silent Anticheat",
+	"description" : "",
+	"author" : "Alva",
+	"contact": "",
+	"version" : "1",
+	"priority": 1,
+	"keybinds": [
+		{
+			"keybind_id": "report_1",
+			"name": "player_report_1",
+			"description": "Peer report keybind 1",
+			"script_path": "report1.lua",
+			"run_in_menu": false,
+			"run_in_game": true,
+			"localized": false
+		},
+		{
+			"keybind_id": "report_2",
+			"name": "player_report_2",
+			"description": "Peer report keybind 2",
+			"script_path": "report2.lua",
+			"run_in_menu": false,
+			"run_in_game": true,
+			"localized": false
+		},
+		{
+			"keybind_id": "report_3",
+			"name": "player_report_3",
+			"description": "Peer report keybind 3",
+			"script_path": "report3.lua",
+			"run_in_menu": false,
+			"run_in_game": true,
+			"localized": false
+		}
+	],
+	"pre_hooks" : [
+
+		{"hook_id" : "lib/entry","script_path" : "entry.lua"}
+	],
+
+	"hooks" : [
+		{
+			"hook_id" : "lib/network/base/networkpeer",
+			"script_path" : "scanner.lua"
+		},
+		{
+			"hook_id" : "lib/managers/playermanager",
+			"script_path" : "scanner.lua"
+		},
+		{
+			"hook_id" : "lib/network/base/handlers/connectionnetworkhandler",
+			"script_path" : "scanner.lua"
+		},
+		{
+			"hook_id" : "lib/network/base/basenetworksession",
+			"script_path" : "scanner.lua"
+		},
+		{
+			"hook_id" : "lib/network/base/hostnetworksession",
+			"script_path" : "scanner.lua"
+		},
+		{
+			"hook_id" : "lib/units/props/managespawnedunits",
+			"script_path" : "scanner.lua"
+		},
+		{
+			"hook_id" : "lib/network/handlers/unitnetworkhandler",
+			"script_path" : "unitnetworkhandler.lua"
+		},
+		{
+			"hook_id" : "lib/managers/mission/missionscriptelement",
+			"script_path" : "eventmanager.lua"
+		},
+		{
+			"hook_id" : "lib/managers/missionmanager",
+			"script_path" : "eventmanager.lua"
+		},
+		{
+			"hook_id" : "lib/units/props/drill",
+			"script_path" : "drill.lua"
+		},
+		{
+			"hook_id" : "lib/units/props/timergui",
+			"script_path" : "drill.lua"
+		},
+		{
+			"hook_id" : "lib/units/interactions/interactionext",
+			"script_path" : "drill.lua"
+		},
+		{
+			"hook_id" : "lib/units/beings/player/playerdamage",
+			"script_path" : "playerdamage.lua"
+		},
+		{
+			"hook_id" : "lib/managers/playermanager",
+			"script_path" : "playerdamage.lua"
+		}
+
+
+	]	
+}
