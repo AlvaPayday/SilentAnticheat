@@ -1,1 +1,34 @@
+This is an anti-cheat / anti-hack mod that helps prevent hacks from ruining your game. It works quietly in the background to remove cheaters and block hacking scripts.
 
+Blocked Game Hacks:
+
+    spawn loot bags
+    secure loot bags
+    disabling door colliders
+    opening vault doors
+    force win / loss
+    instant / short drills
+
+Detectable Player Hacks:
+
+    hacked health or armor values
+    hacked damage interval
+    hacked weapon damage
+    hacked movement speed
+    hacked skillpoints
+    banned mods
+    infinite inspire
+    auto-respawn from custody
+    client changing another player's state
+    explosive damage (trolling)
+    infinite interact distance
+
+This is an early beta version, so please report any bugs or non-working features in the comments below.
+
+Currently there are 3 maps that can block vault opening: Branch Bank, First World Bank and Go Bank. I will be adding more vaults in future updates (currently working on Big Bank) since they are fairly time consuming and each map's scripting is unique.
+
+There is a player report function which displays each player's information using a keybind. The keybinds correspond to the players (left to right) showing on your hud. Usually I set it up in Mod Keybinds as sequential keys (numpad 1,2,3) corresponding to the player order on the hud, from left to right. You don't have to use this feature, but it is available if you want to inspect players. Currently it is a chat window output, but later I may make it a hud panel. It will display the player's max health and armor values, the weapons they are using and the averaged damage (collected 10 times and averaged), damage interval, skill point verification and whether they are fully verified.
+
+The host is subject to the same level of scrutiny (actually more) so cheaters will not be able to host using this mod. It will literally kick them from their own game. I am considering a crimenet filter later so you can prioritize hosts with this mod.
+
+There is no mod menu for the mod, it simply works. In addition, specific in-game hacks will trigger a punishment in-game. I'll leave that a surprise.
