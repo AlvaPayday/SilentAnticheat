@@ -2,13 +2,13 @@ local selection_index = 2
 
 if managers.chat and managers.hud and managers.hud._teammate_panels then
   local panel = managers.hud._teammate_panels[selection_index]
-
-  if panel then
-      local peer_id = panel:peer_id()
-      if peer_id then
-        report(peer_id)
-      elseif panel._ai then
-        warn("No player reports for Team AI")
-      end
+  
+  if panel._ai then
+    warn("No reports for Team AI")
+  else
+    local peer = managers.network:session():peer(panel:peer_id())
+    if peer then
+      report(peer:id())
+    end    
   end
 end

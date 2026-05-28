@@ -61,7 +61,7 @@ bannedMods = {
   "Cocaine Drill"
 }
 
-local exclusion_list = {
+exclusion_list = {
   "Put on mask instantly - Gab",
   "No slow motion - Gab",
   "No fall damage - Gab",
@@ -191,9 +191,7 @@ Hooks:PreHook(ConnectionNetworkHandler, "sync_outfit", "verify_step_1", function
       --outfit validated
     else
       --outfit was hacked or corrupted
-      peer_tracker[peer_id].pdata.blocked = true
-      cold_storage(peer_id)
-      dropPeer(peer_id, "outfit hacked or corrupted")
+      kick(peer_id, "outfit hacked or corrupted")
       return
     end
     
@@ -216,9 +214,7 @@ Hooks:PreHook(ConnectionNetworkHandler, "sync_outfit", "verify_step_1", function
       if sp_total <= 120 and sp_total ~= 0 then
         peer_tracker[peer_id].pdata.sp_verified = true
       else
-        peer_tracker[peer_id].pdata.blocked = true
-        cold_storage(peer_id)
-        dropPeer(peer_id, "skill abuse:" .. tostring(sp_total) .. " skill points" )
+        kick(peer_id, "skill abuse:" .. tostring(sp_total) .. " skill points" )
       end
       
       if not peer_tracker[peer:id()].pdata.mods_verified then
@@ -245,9 +241,7 @@ Hooks:PreHook(ConnectionNetworkHandler, "request_spawn_member", "hjshdf890sdkhe"
     local test_time = peer_tracker[peer:id()] and peer_tracker[peer:id()].stat_counter + 10 or 0
     
     if test_time < current_time then
-      peer_tracker[peer_id].pdata.blocked = true
-      cold_storage(peer_id)
-      dropPeer(peer_id, "auto respawn hack")
+      kick(peer_id, "auto respawn hack")
       return 0
     end
 end)
@@ -280,6 +274,7 @@ end)
 
 Hooks:PreHook(BaseNetworkSession, "on_load_complete", "lobby_start", function(self)
     lobby_tasks.level_name = managers.job:current_level_id()
+    lobby_tasks.difficulty_index = tweak_data:difficulty_to_index(Global and Global.game_settings and Global.game_settings.difficulty or 0)
     
     for i = 1, #locked_maps do
       if lobby_tasks.level_name == locked_maps[i] then
@@ -308,9 +303,7 @@ Hooks:PreHook(BaseNetworkSession, "spawn_member_by_id", "sjlsdf90", function (se
     local test_time = peer_tracker[peer_id] and peer_tracker[peer_id].stat_counter and peer_tracker[peer_id].stat_counter + 10
     
     if test_time and test_time < current_time then
-      peer_tracker[peer_id].pdata.blocked = true
-      cold_storage(peer_id)
-      dropPeer(peer_id, "auto respawn hack")
+      kick(peer_id, "auto respawn hack")
       return 0
     end
 end)

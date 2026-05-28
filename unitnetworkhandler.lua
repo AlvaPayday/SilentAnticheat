@@ -13,6 +13,12 @@ function UnitNetworkHandler:set_unit(unit, character_name, outfit_string, outfit
 		return
 	end
 
+  if not peer_tracker[peer_id] then
+    DelayedCalls:Add("late_verify_delayed", 10, function()
+        late_verify(peer_id)
+    end)
+  end
+  
 	if peer_id == 0 then
 		local loadout = managers.blackmarket:unpack_henchman_loadout_string(outfit_string)
 
@@ -429,12 +435,15 @@ function UnitNetworkHandler:damage_bullet(subject_unit, attacker_unit, damage, i
       local new_value = TimerManager:game():time() - peer_tracker[id].pdata.last_damage
       peer_tracker[id].pdata.last_damage = TimerManager:game():time()
       
-      if peer_tracker[id].pdata.damage_interval == 0 and new_value >= 0.35 then
+      if peer_tracker[id].pdata.damage_interval == 0 then
+        if lobby_tasks.difficulty_index >= 7 and new_value > 0.35 then
+        peer_tracker[id].pdata.damage_interval = new_value
+      elseif lobby_tasks.difficulty_index < 7 and new_value > 0.45 then
         peer_tracker[id].pdata.damage_interval = new_value
       else
         if new_value < peer_tracker[id].pdata.damage_interval and new_value >= 0.35 then
           peer_tracker[id].pdata.damage_interval = new_value
-          if new_value <= 0.39 then
+          if new_value <= 0.39 and lobby_tasks.difficulty_index >= 7 or new_value <= 0.49 and lobby_tasks.difficulty_index < 7 then
             local verified = check_player_verified (peer)
             --check for fully verified here since damage_interval settled to acceptable value
             if verified then
@@ -442,7 +451,7 @@ function UnitNetworkHandler:damage_bullet(subject_unit, attacker_unit, damage, i
             end
             
           end
-          
+         end 
         end
       end
     end  
@@ -511,7 +520,12 @@ function UnitNetworkHandler:damage_explosion_fire(subject_unit, attacker_unit, d
 	if not self._verify_character_and_sender(subject_unit, sender) or not self._verify_gamestate(self._gamestate_filter.any_ingame) then
 		return
 	end
-
+  
+  if subject_unit and attacker_unit and subject_unit == managers.player:player_unit() and attacker_unit == managers.player:player_unit() then
+    damage = 0
+  end
+  
+  	--local is_player = unit == managers.player:player_unit()
 	if not alive(attacker_unit) or attacker_unit:key() == subject_unit:key() then
 		attacker_unit = nil
 	end
@@ -527,7 +541,11 @@ function UnitNetworkHandler:damage_explosion_stun(subject_unit, attacker_unit, d
 	if not self._verify_character_and_sender(subject_unit, sender) or not self._verify_gamestate(self._gamestate_filter.any_ingame) then
 		return
 	end
-
+  
+  if subject_unit and attacker_unit and subject_unit == managers.player:player_unit() and attacker_unit == managers.player:player_unit() then
+    damage = 0
+  end
+  
 	if not alive(attacker_unit) or attacker_unit:key() == subject_unit:key() then
 		attacker_unit = nil
 	end
@@ -627,7 +645,7 @@ function UnitNetworkHandler:from_server_damage_explosion_fire(subject_unit, atta
 	if not self._verify_character(subject_unit) or not self._verify_gamestate(self._gamestate_filter.any_ingame) then
 		return
 	end
-
+  
 	if not alive(attacker_unit) or attacker_unit:key() == subject_unit:key() then
 		attacker_unit = nil
 	end
@@ -2561,8 +2579,7 @@ function UnitNetworkHandler:start_timer_gui(unit, timer, sender)
         self._unit:timer_gui()["_current_timer"] = 360
         self._unit:timer_gui()["_timer"] = 360
         managers.network:session():send_to_peers_synched("start_timer_gui", unit, 360)
-        extra_crispy(sender_peer, "tried to hack drill times (FAIL).")
-        --TODO: remove user here
+        kick(sender_peer:id(), " tried to hack drill times")
     end
       
   end
@@ -2599,10 +2616,7 @@ function UnitNetworkHandler:on_sole_criminal_respawned(peer_id, sender)
   if test_time < current_time then
       
       if peer:id() == peer_id then        
-       peer_tracker[peer:id()].pdata.blocked = true
---       cold_storage(peer:id())
---       dropPeer(peer:id(), "auto-respawn from custody hack")
-       extra_crispy(peer, " attempted to auto-respawn from custody.")
+       kick(peer_id, " attempted to auto-respawn from custody.")
        return
       end
       
@@ -2624,16 +2638,12 @@ function UnitNetworkHandler:sync_player_movement_state(unit, state, down_time, u
 	if not self._verify_gamestate(self._gamestate_filter.any_ingame) then
 		return
 	end
-
+  
+  if not alive(unit) then return end
+  
 	local peer = self._verify_sender(sender)
   
   local target_unit = managers.network:session():peer_by_unit (unit)
-  
-  if target_unit then
-    if peer_tracker[target_unit:id()].pdata.blocked then
-      state = "arrested"
-    end
-  end
   
 	if not peer then
 		return
@@ -2641,16 +2651,8 @@ function UnitNetworkHandler:sync_player_movement_state(unit, state, down_time, u
 
 	self:_chk_unit_too_early(unit, unit_id_str, "sync_player_movement_state", 1, unit, state, down_time, unit_id_str, sender)
 
-	if not alive(unit) then
-		return
-	end
-
 	if not peer:is_host() and peer:unit():key() ~= unit:key() then
-		--TODO: client is trying to change another player's movement state
-    peer_tracker[peer:id()].pdata.blocked = true
---    cold_storage(peer:id())
---    dropPeer(peer:id(), peer:name() .. " attempted to change another player's state")
-    extra_crispy(peer, "attempted to change another player's state (failed).")
+    warn(peer:id(), "attempted to change another player's state.")
 		return
 	end
   
@@ -2989,10 +2991,7 @@ function UnitNetworkHandler:server_drop_carry(carry_id, carry_multiplier, dye_in
   
   if not check_allowed_bag (carry_id) then
     if peer then
-      peer_tracker[peer:id()].pdata.blocked = true
-      cold_storage(peer:id())
-      --dropPeer(peer:id(), peer:name() .. " attempted to spawn loot bags")
-      extra_crispy(peer, "attempted to spawn loot bags (FAIL)")
+      kick(peer:id(), " attempted to spawn loot bags")
     end
     return
   end
@@ -3478,11 +3477,8 @@ function UnitNetworkHandler:set_armor(unit, percent, max_mul, sender)
 	local character_data = managers.criminals:character_data_by_peer_id(peer_id)
   
   if max_mul and max_mul >= 0.492 then
-    --TODO: armor buff hack
-    peer_tracker[peer:id()].pdata.blocked = true
---    cold_storage(peer:id())
-    --dropPeer(peer:id(), peer:name() .. " has hacked armor value")
-    extra_crispy(peer, "has a hacked armor value. too bad so sad.")
+    local armor_value = math.floor(max_mul * 1000)
+    kick(peer:id(), " has hacked armor value. armor: " .. armor_value)
     return
   end
   
@@ -3519,8 +3515,8 @@ function UnitNetworkHandler:set_health(unit, percent, max_mul, sender)
   local current_time = TimerManager:game():time()
   
   if max_mul and max_mul > 0.595 then
-    peer_tracker[peer:id()].pdata.blocked = true
-    extra_crispy(peer, "hacked their health value. enjoy your punishment.")
+    local health_value = math.floor(max_mul * 1000)
+    kick(peer:id(), " hacked their health value. health: " .. health_value)
     return
   end
   
@@ -3907,8 +3903,7 @@ function UnitNetworkHandler:mission_ended(win, num_is_inside, sender)
 		if win then
       if not lobby_tasks.escape_enabled then
         local peer = self._verify_sender(sender)
-        --warn(peer:name() .. " tried to force win")
-        extra_crispy(peer, "tried a force-win hack")
+        kick(peer:id(), " attempted a force win hack")
       end
       
 			game_state_machine:change_state_by_name("victoryscreen", {

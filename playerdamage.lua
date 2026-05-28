@@ -20,7 +20,9 @@ local function check_stats()
     verified = false
   end
   
-  if dmg_ext._dmg_interval > 0.35 then
+  if lobby_tasks.difficulty_index >= 7 and dmg_ext._dmg_interval > 0.35 then
+    verified = false
+  elseif lobby_tasks.difficulty_index < 7 and dmg_ext._dmg_interval > 0.45 then
     verified = false
   end
   
@@ -32,9 +34,7 @@ local function check_stats()
   
   if not verified then
     local peer_id = 1
-    peer_tracker[peer_id].pdata.blocked = true
-    cold_storage(peer_id)
-    dropPeer(peer_id, "")
+    host_kick_warn("You cannot use Silent Anticheat while cheating. Disable cheats!")
   end
   
   peer_tracker[1].pdata.has_feign_death = managers.player:upgrade_value("player", "cheat_death_chance") ~= nil
@@ -53,49 +53,41 @@ local function check_stats()
   end
   
   if not soup then 
-    peer_tracker[1].pdata.blocked = true
-    cold_storage(1)
-    dropPeer(1, "")
+   host_kick_warn("You cannot use Silent Anticheat while cheating (banned mods)")
   end
 end
 
-local old_set_health = PlayerDamage.set_health
-function PlayerDamage:set_health(health)
-  
+Hooks:PostHook(PlayerDamage, "set_health", "asd9udfs9fdsuo", function (self, health)
+    
   if peer_tracker[1].pdata.health == 0 then
-    peer_tracker[1].pdata.health = self:_max_health()
+    peer_tracker[1].pdata.health = (self:_max_health() * 10)
   end
-  
-  old_set_health(self, health)
-end
+end)
 
-local old_set_armor = PlayerDamage.set_armor
 
-function PlayerDamage:set_armor(armor)
+Hooks:PostHook(PlayerDamage, "set_armor", "hjsdy893hkjdf", function (self, armor)
   if peer_tracker[1].pdata.armor == 0 then
-    peer_tracker[1].pdata.armor = self:_max_armor()
+    peer_tracker[1].pdata.armor = (self:_max_armor() * 10)
     DelayedCalls:Add("check_stats", 10, function()
       check_stats()
     end)
   end
-  
-  old_set_armor(self, armor)
-  
-end
+    
+end)
 
-function PlayerDamage:set_god_mode(state)
+Hooks:PostHook(PlayerDamage, "set_god_mode", "jlaflsfserdf", function (self, state)
   local peer_id = 1
-  peer_tracker[peer_id].pdata.blocked = true
-  cold_storage(peer_id)
-  dropPeer(peer_id, "")
-end
+  
+  host_kick_warn("You cannot use Silent Anticheat while cheating (god mode)")
+    
+end)
 
-local old_set_movement = PlayerManager.set_player_state
-function PlayerManager:set_player_state(state)
+Hooks:PreHook(PlayerManager, "set_player_state", "uiouiouou", function (self, state)
   if self._current_state == "arrested" then
     if peer_tracker[1].pdata.blocked then
+      state = "arrested"
       return
     end    
-  end
-  old_set_movement(self, state)
-end
+  end    
+    
+end)

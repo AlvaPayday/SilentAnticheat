@@ -7,6 +7,7 @@ _G.lobby_tasks = {
   escape_enabled = false,
   has_no_return = false,
   level_name = "",
+  difficulty_index = 0,
   locked_map = false,
   drill_start = 0,
   drill_time = 0,
@@ -83,6 +84,19 @@ function init_new_player(peer_id)
   health = 0                  --max health value
 
 }
+end
+
+function host_warn(text)
+  managers.chat:_receive_message(ChatManager.GAME, "[SA] ", text, Color.red)
+end
+
+function host_kick_warn(text)
+  managers.chat:_receive_message(ChatManager.GAME, "[SA] ", text, Color.red)
+  managers.chat:_receive_message(ChatManager.GAME, "[SA] ", "you will be kicked from the game in 30 seconds", Color.red)
+  DelayedCalls:Add("host_kick", 30, function()
+      dropPeer (1, nil)
+  end)
+  
 end
 
 function broadcast(text)
@@ -164,6 +178,7 @@ function god_tracker (peer)
         local unit = peer:unit()
         if alive(unit) then
           if unit:character_damage()._mission_damage_blockers and unit:character_damage()._mission_damage_blockers.invulnerable then
+            AlvasMod:msg("Invulnerable: " .. peer:name())
             unit:contour():add("tmp_invulnerable",true)
             unit:contour():flash("tmp_invulnerable", 0.2)
             managers.network:session():send_to_peers_synched("sync_contour_add", unit, -1, table.index_of(ContourExt.indexed_types, "tmp_invulnerable"), 1) 
@@ -196,18 +211,22 @@ function dropPeer (id, reason)
   local peer_name = peer:name()
   
 	if peer then
-		managers.network._session:on_peer_kicked(peer, id, 2)
-		managers.network._session:send_to_peers("kick_peer", id, 2)
+		managers.network._session:on_peer_kicked(peer, id, 0)
+		managers.network._session:send_to_peers("kick_peer", id, 0)
     --managers.ban_list:ban(peer:user_id(), peer:name())
 	end
   
-  local text = peer_name .. " has been removed for : " .. reason
+  local text
+  
+  if reason then 
+    text = peer_name .. " has been removed for : " .. reason
+  end
   
   if AlvasMod then
     if reason then
       AlvasMod:broadcast(text)
     else
-      AlvasMod:broadcast(peer:name() .. " cheated and has been obliterated")
+      AlvasMod:broadcast(peer:name() .. " cheated and has been removed")
     end
   else
     if reason then
@@ -216,14 +235,26 @@ function dropPeer (id, reason)
   end
 end
 
+function kick(peer_id, reason)
+  peer_tracker[peer_id].pdata.blocked = true
+  cold_storage(peer_id)
+  dropPeer(peer_id, reason)
+end
+
 function check_player_verified (peer)
   local pdata = peer_tracker[peer:id()].pdata
   
-  if pdata.damage_interval > 0 and pdata.damage_interval <= 0.385 and pdata.mods_verified and pdata.sp_verified and pdata.upgrades_loaded then
+  
+  if lobby_tasks.difficulty_index >= 7 and pdata.damage_interval > 0 and pdata.damage_interval <= 0.385 and pdata.mods_verified and pdata.sp_verified and pdata.upgrades_loaded then
     if pdata.primary_damage > 0 or pdata.secondary_damage > 0 then
       peer_tracker[peer:id()].pdata.fully_verified = true
       return true
-    end    
+    end  
+  elseif lobby_tasks.difficulty_index < 7 and pdata.damage_interval > 0 and pdata.damage_interval <= 0.485 and pdata.mods_verified and pdata.sp_verified and pdata.upgrades_loaded then
+    if pdata.primary_damage > 0 or pdata.secondary_damage > 0 then
+      peer_tracker[peer:id()].pdata.fully_verified = true
+      return true
+    end  
   end
   
   return false
@@ -320,7 +351,7 @@ function peer_setup (peer)
       warn(peer:name() .. " has convert enemies health multiplier: " .. upgrades.passive_convert_enemies_health_multiplier)
     end
     
-    if upgrades.convert_enemies_max_minions and upgrades.convert_enemies_max_minions > 4 then
+    if upgrades.convert_enemies_max_minions and upgrades.convert_enemies_max_minions > 3 then
       warn(peer:name() .. " has convert max minions: " .. upgrades.convert_enemies_max_minions)
     end
     
@@ -524,7 +555,9 @@ function report (peer_id)
   end
   
   if pdata.damage_interval > 0 then
-    if pdata.damage_interval > 0.35 and pdata.damage_interval <= 38.5 then
+    if lobby_tasks.difficulty_index >= 7 and pdata.damage_interval > 0.35 and pdata.damage_interval <= 38.5 then
+      text = text .. "damage interval: normal" .. "\n"
+    elseif lobby_tasks.difficulty_index < 7 and pdata.damage_interval > 0.45 and pdata.damage_interval <= 48.5 then
       text = text .. "damage interval: normal" .. "\n"
     else
       text = text .. "damage interval: abnormal(high)" .. "\n"
@@ -534,53 +567,6 @@ function report (peer_id)
   warn(text)
 end
 
-function delay_kick (peer, delay)
-  --tied to extra_crispy for explosion effect
-  DelayedCalls:Add("kick_delay", delay, function ()
-    if peer_tracker[peer:id()] then peer_tracker[peer:id()].pdata.blocked = true end
-    local proj = World:spawn_unit(Idstring("units/payday2/weapons/wpn_frag_grenade/wpn_frag_grenade"), peer:unit():position(), Rotation())
-    proj:base():_detonate()
-    cold_storage(peer_id)
-    dropPeer(peer_id, nil)  
-    
-  end)
-  
-end
 
-function extra_crispy(peer, reason)
-  
-  if peer:is_host() then
-   local unit = peer:unit()
-   peer_tracker[1].pdata.blocked = true
-   managers.player:set_player_state("arrested")
-   DelayedCalls:Add("burn_cheater", 0.5, function()
-     local pos = peer:unit():position()
-     local unit = peer:unit()
-     local sound_source = unit:sound_source()
-     local proj = World:spawn_unit(Idstring("units/pd2_dlc_bbq/weapons/molotov_cocktail/wpn_molotov_third"), pos, Rotation())
-     proj:base():_detonate()
-     unit:sound_source():post_event("burnhurt")
-     broadcast(peer:name() ..  " " .. reason)
-     broadcast(peer:name() .. " will now be obliterated.")
-     delay_kick(peer, 2.5)
-   end)
-   
-  else
-    local network, send 
-    network = peer:unit():network()
-    send = network.send
-    send(network, "sync_player_movement_state", "arrested", 0, peer:id())
-    peer_tracker[peer:id()].pdata.blocked = true
-    DelayedCalls:Add("burn_cheater", 0.5, function()
-     local pos = peer:unit():position()
-     local unit = peer:unit()
-     local sound_source = unit:sound_source()
-     local proj = World:spawn_unit(Idstring("units/pd2_dlc_bbq/weapons/molotov_cocktail/wpn_molotov_third"), pos, Rotation())
-     proj:base():_detonate()
-     unit:sound_source():post_event("burnhurt")
-     broadcast(peer:name() ..  " " .. reason)
-     broadcast(peer:name() .. " will now be obliterated.")
-     delay_kick(peer, 2.5)
-   end)
-  end
-end
+
+
