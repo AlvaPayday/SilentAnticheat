@@ -178,7 +178,7 @@ function god_tracker (peer)
         local unit = peer:unit()
         if alive(unit) then
           if unit:character_damage()._mission_damage_blockers and unit:character_damage()._mission_damage_blockers.invulnerable then
-            AlvasMod:msg("Invulnerable: " .. peer:name())
+            warn("Invulnerable: " .. peer:name())
             unit:contour():add("tmp_invulnerable",true)
             unit:contour():flash("tmp_invulnerable", 0.2)
             managers.network:session():send_to_peers_synched("sync_contour_add", unit, -1, table.index_of(ContourExt.indexed_types, "tmp_invulnerable"), 1) 
