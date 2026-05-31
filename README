@@ -31,7 +31,7 @@ This is an early beta version, so it will be receiving regular updates and new f
 Currently there are 3 maps that can block vault opening: Branch Bank, First World Bank and Go Bank. I will be adding more vaults in future updates (currently working on Big Bank) since they are fairly time consuming and each map's scripting is unique.
 
 There is a player report function which displays each player's information using a keybind. The keybinds correspond to the players (left to right) showing on your hud. Usually I set it up in Mod Keybinds as sequential keys (numpad 1,2,3) corresponding to the player order on the hud, from left to right. You don't have to use this feature, but it is available if you want to inspect players. Currently it is a chat window output, but later I may make it a hud panel. It will display the player's max health and armor values, the weapons they are using and the averaged damage (collected 10 times and averaged), damage interval, skill point verification and whether they are fully verified.
-Fully verified is a thorough check of all mods, skill points, weapon damage thresholds and damage interval. Once all of these data points pass scrutiny, they are fully verified. 
+Fully verified is a thorough check of all mods, skill points, max health and armor, weapon damage thresholds and damage interval. Once all of these data points pass scrutiny, they are fully verified. 
 When all players in-game are fully verified, it prevents additional vetting code from running regularly.
 The host is subject to the same level of scrutiny (actually more) so cheaters will not be able to host using this mod. It will literally kick them from their own game. I am considering a crimenet filter later so you can prioritize hosts with this mod.
 
