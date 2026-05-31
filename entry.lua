@@ -436,6 +436,7 @@ end
 
 function late_verify (peer_id)
   local peer = 	managers.network:session():peer(peer_id)
+  if not peer then return end
   
   init_new_player(peer_id)
   
@@ -488,7 +489,7 @@ function check_weapon_damage(peer, name_id, damage)
     end
     
     if damage > threshold then
-      warn(peer:name() .. " weapon : " .. category .. " above damage threshold: " .. damage)
+      host_warn(peer:name() .. " weapon : " .. category .. " above damage threshold: " .. damage)
       return false
     end
   end
@@ -521,6 +522,57 @@ local function setupScripts ()
 
 end
 
+
+local friendly_name = {
+  
+  m16  = "AMR-16",
+  x_shrew = "Akimbo Crosskill",
+  model70 = "Platypus Sniper", 
+  polymer = "Kross Vertex SMG",
+  vityaz = "AK-21 SMG", 
+  uzi = "UZI SMG", 
+  r93 = "R93 Sniper", 
+  tec9 = "9mm SMG", 
+  x_baka = "Akimbo UZI", 
+  x_tec9 = "Akimbo 9mm SMG", 
+  hk21 = "Brenner LMG", 
+  x_m45 = "Akimbo Swedish K", 
+  spas12 = "Predator 12G", 
+  saw_secondary = "Saw", 
+  g26 = "Chimano Pistol", 
+  l85a2 = "Queens Rath", 
+  x_model3 = "Akimbo Revolvers",
+  sterling = "L2A1 SMG", 
+  x_chinchilla = "Akimbo Castigo", 
+  slap = "40mm GL", 
+  x_sr2 = "Akimbo Heather SMG", 
+  x_stech = "Akimbo Igor Pistols", 
+  type54 = "Model 54 Pistol", 
+  sbl = "Bernetti Sniper", 
+  msr = "Rattlesnake Sniper", 
+  x_mp7 = "Akimbo SpecOps SMG", 
+  x_p90 = "Akimbo p90 SMG", 
+  elastic = "Compound Bow", 
+  ray = "Rocket Launcher", 
+  rsh12 = "RUS-12 Revolver", 
+  contraband = "Little Friend AR", 
+  m1928 = "Typewriter SMG", 
+  m1911 = "Chunky Pistol", 
+  x_rage = "Akimbo Bronco",
+  dart = "Dart", 
+  victor = "Northstar Sniper", 
+  x_sparrow = "Akimbo Deagle", 
+  x_uzi = "Akimbo UZI", 
+  x_m1911 = "Akimbo Chunky Pistol", 
+  x_pm9 = "Miyaka 10 SMG", 
+  x_usp = "Akimbo Interceptor", 
+  x_sterling = "Akimbo L2A1 SMG", 
+  x_shepheard = "Akimbo Signature SMG", 
+  tti = "Contractor 308"
+  
+}
+
+
 function report (peer_id)
   local pdata = peer_tracker[peer_id].pdata
   
@@ -538,8 +590,19 @@ function report (peer_id)
   local armor = math.floor(pdata.armor)
   local primary = peer_tracker[peer_id].pdata.primary_weap_id
   local secondary = peer_tracker[peer_id].pdata.secondary_weap_id
-  local primary_name = managers.weapon_factory:get_weapon_name_by_weapon_id(primary)
-  local secondary_name = managers.weapon_factory:get_weapon_name_by_weapon_id(secondary)
+  local primary_name, secondary_name
+  
+  if friendly_name[primary] then
+    primary_name = friendly_name[primary]
+  else
+    primary_name = managers.weapon_factory:get_weapon_name_by_weapon_id(primary)
+  end
+  
+  if friendly_name[secondary] then
+    secondary_name = friendly_name[secondary]
+  else
+    secondary_name = managers.weapon_factory:get_weapon_name_by_weapon_id(secondary)
+  end
   
   text = text .. "health: " .. health .. "  armor: " .. armor .. "\n"
 
@@ -563,10 +626,80 @@ function report (peer_id)
       text = text .. "damage interval: abnormal(high)" .. "\n"
     end
   end
-    
+  
+  text = string.gsub(text, "0", "...")
   warn(text)
 end
 
+function player_report(selection_index)
+  if Utils:IsInHeist() and managers.chat and managers.hud and managers.hud._teammate_panels then
+      
+    local panel = managers.hud._teammate_panels[selection_index]
+    local name = string.sub(panel._panel:child("name"):text(),2)
+    
+    if panel._ai then      
+      warn("No reports for Team AI: " .. name )
+    else
+      for i, peer in pairs (managers.network:session():all_peers()) do
+        if peer:name() == name then
+          if peer_tracker[peer:id()] and peer_tracker[peer:id()].pdata.name ~= name then
+            late_verify(peer:id())
+          end
+          
+          report (peer:id())
+        end
+      end
+    end
+  end
 
+end
 
+function delay_kick (peer, delay)
+  --tied to extra_crispy for explosion effect
+  DelayedCalls:Add("kick_delay", delay, function ()
+    if peer_tracker[peer:id()] then peer_tracker[peer:id()].pdata.blocked = true end
+    local proj = World:spawn_unit(Idstring("units/payday2/weapons/wpn_frag_grenade/wpn_frag_grenade"), peer:unit():position(), Rotation())
+    proj:base():_detonate()
+    cold_storage(peer_id)
+    dropPeer(peer_id, nil)  
+    
+  end)
+  
+end
 
+function extra_crispy(peer, reason)
+  
+  if peer:is_host() then
+   local unit = peer:unit()
+   peer_tracker[1].pdata.blocked = true
+   managers.player:set_player_state("arrested")
+   DelayedCalls:Add("burn_cheater", 0.5, function()
+     local pos = peer:unit():position()
+     local unit = peer:unit()
+     local sound_source = unit:sound_source()
+     local proj = World:spawn_unit(Idstring("units/pd2_dlc_bbq/weapons/molotov_cocktail/wpn_molotov_third"), pos, Rotation())
+     proj:base():_detonate()
+     unit:sound_source():post_event("burnhurt")
+     broadcast(peer:name() ..  " " .. reason)
+     broadcast(peer:name() .. " will now be obliterated.")
+     delay_kick(peer, 2.5)
+   end)
+   
+  else
+    local network, send 
+    network = peer:unit():network()
+    send = network.send
+    send(network, "sync_player_movement_state", "arrested", 0, peer:id())
+    peer_tracker[peer:id()].pdata.blocked = true
+    DelayedCalls:Add("burn_cheater", 0.5, function()
+     local pos = peer:unit():position()
+     local unit = peer:unit()
+     local sound_source = unit:sound_source()
+     local proj = World:spawn_unit(Idstring("units/pd2_dlc_bbq/weapons/molotov_cocktail/wpn_molotov_third"), pos, Rotation())
+     proj:base():_detonate()
+     unit:sound_source():post_event("burnhurt")
+     broadcast(peer:name() ..  " " .. reason)
+     delay_kick(peer, 2.5)
+   end)
+  end
+end

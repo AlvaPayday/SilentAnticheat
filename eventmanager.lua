@@ -8,7 +8,8 @@ local locked_red2 = {
   vault_door_open = false,
   vault_door_drill_start = 0,
   vault_door_timer = 0,
-  vault_door_drill_finished = false
+  vault_door_drill_finished = false,
+  this_is_it = false
 }
 
 local locked_harvest = {
@@ -92,6 +93,45 @@ local function check_authority(id, unit)
        
     end
     
+    if id == 101851 then  --normal trigger for overdrill
+      --check player positions
+      local coords = {
+        Vector3(1209.17, 1252.96, -23.7953), 
+        Vector3(2396.17, 1626.85, -23.7953),
+        Vector3(2813.76, 1251.56, -23.7953),
+        Vector3(2391.69, 896.16, -23.7953)
+      }
+      
+      local counter = 0
+      local unit
+      for id, peer in pairs (managers.network:session():all_peers()) do
+        for i = 1, #coords do
+          unit = peer:unit()
+          if unit and alive(unit) and mvector3.distance(unit:position(), coords[i]) < 80 then
+            counter = counter + 1
+          end
+        end
+      end
+      
+      if counter ~= 4 then
+        return false
+      end
+      
+      for _, script in pairs(managers.mission:scripts()) do
+        for id, element in pairs(script:elements()) do
+           for _, trigger in pairs(element:values().trigger_list or {}) do
+            if trigger.notify_unit_sequence == "light_flicker" then
+              trigger.notify_unit_sequence = "light_on"
+              local values = element:values()
+              values.trigger_times = 1
+            end
+           end
+          
+        end
+      end
+      locked_red2.this_is_it = true
+      return true
+    end
     
     if id == 102362 and unit then  -- attemped disable vault door collider
       --re-enable collider automatically

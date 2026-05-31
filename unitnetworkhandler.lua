@@ -1,3 +1,4 @@
+
 function UnitNetworkHandler:damage_bullet(subject_unit, attacker_unit, damage, i_body, height_offset, variant, death, sender)
 	
   if not self._verify_character_and_sender(subject_unit, sender) or not self._verify_gamestate(self._gamestate_filter.any_ingame) then
@@ -252,7 +253,10 @@ function UnitNetworkHandler:sync_interacted(unit, unit_id, tweak_setting, status
   local interact_distance = mvector3.distance(peer_unit:position(), unit:position())
   
   if interact_distance > 300 then
-    warn(peer:name() .. " :interact dist. warning: " .. tostring(unit_id) .. " dist: " .. tostring(interact_distance) .. "type: " .. tostring(tweak_setting) .. " status: " .. tostring(status))
+    local interact_type = tostring(tweak_setting)
+    if interact_type ~= "hostage_convert" and interact_type ~= "open_slash_close_act" then
+      warn(peer:name() .. " :interact distance warning: " .. tostring(interact_distance) .. " type: " .. tostring(tweak_setting))  
+    end
     return
   end
   
@@ -408,10 +412,11 @@ function UnitNetworkHandler:start_timer_gui(unit, timer, sender)
     end
     
     if is_mission_drill and drill_time < 60 or not timer_match then
-        self._unit:timer_gui()["_current_timer"] = 360
-        self._unit:timer_gui()["_timer"] = 360
+        unit:timer_gui()["_current_timer"] = 360
+        unit:timer_gui()["_timer"] = 360
         managers.network:session():send_to_peers_synched("start_timer_gui", unit, 360)
-        kick(sender_peer:id(), " tried to hack drill times")
+        --kick(sender_peer:id(), " tried to hack drill times")
+        extra_crispy(sender_peer, " attempted to hack drill time and will be obliterated.")
     end
       
   end
@@ -436,7 +441,8 @@ function UnitNetworkHandler:on_sole_criminal_respawned(peer_id, sender)
   if test_time < current_time then
       
       if peer:id() == peer_id then        
-       kick(peer_id, " attempted to auto-respawn from custody.")
+      -- kick(peer_id, " attempted to auto-respawn from custody.")
+       extra_crispy(peer, " attempted to auto-respawn from custody and will now be obliterated.")
        return
       end
       
@@ -613,7 +619,8 @@ function UnitNetworkHandler:server_drop_carry(carry_id, carry_multiplier, dye_in
   
   if not check_allowed_bag (carry_id) then
     if peer then
-      kick(peer:id(), " attempted to spawn loot bags")
+      --kick(peer:id(), " attempted to spawn loot bags")
+      extra_crispy(peer, " attempted loot bag spawning and will be obliterated.")
     end
     return
   end
@@ -678,7 +685,7 @@ function UnitNetworkHandler:set_armor(unit, percent, max_mul, sender)
   
   if max_mul and max_mul >= 0.492 then
     local armor_value = math.floor(max_mul * 1000)
-    kick(peer:id(), " has hacked armor value. armor: " .. armor_value)
+    host_warn(peer:id() .. " has abnormal armor value. armor: " .. armor_value)
     return
   end
   
@@ -716,7 +723,7 @@ function UnitNetworkHandler:set_health(unit, percent, max_mul, sender)
   
   if max_mul and max_mul > 0.595 then
     local health_value = math.floor(max_mul * 1000)
-    kick(peer:id(), " hacked their health value. health: " .. health_value)
+    host_warn(peer:id() .. " has abnormal health value. health: " .. health_value)
     return
   end
   

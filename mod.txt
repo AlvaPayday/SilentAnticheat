@@ -96,6 +96,10 @@
 		{
 			"hook_id" : "lib/managers/playermanager",
 			"script_path" : "playerdamage.lua"
+		},
+		{
+			"hook_id" : "lib/managers/waitmanager",
+			"script_path" : "waitmanager.lua"
 		}
 
 

@@ -315,3 +315,13 @@ Hooks:PreHook(HostNetworkSession, "on_join_request_received", "djkhsd98ejd", fun
       return 0
     end 
 end)
+
+Hooks:PostHook(HostNetworkSession, "_spawn_dropin_player", "ajlksdjfsdfusd90", function (self, peer)
+    
+    if peer and not peer_tracker[peer:id()] then
+      DelayedCalls:Add("late_verify_needed", 3, function()
+          late_verify (peer:id())
+      end)
+    end
+end)
+
