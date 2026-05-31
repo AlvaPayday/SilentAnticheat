@@ -1,4 +1,6 @@
-This is an anti-cheat / anti-hack mod that helps prevent hacks from ruining your game. It works quietly in the background to remove cheaters and block hacking scripts.
+Version 1.1 5/30/26
+
+This is an anti-cheat / anti-hack mod for Payday 2 that helps prevent hacks from ruining your game. It works quietly in the background to remove cheaters and block hacking scripts.
 
 Blocked Game Hacks:
 
@@ -23,8 +25,9 @@ Detectable Player Hacks:
     explosive damage (trolling)
     infinite interact distance
 
-This is an early beta version, so please report any bugs directly to the author or on one of the mod comment pages.
+This is an early beta version, so it will be receiving regular updates and new features. Bookmark the page and revisit regularly if you like the mod.
 
+    
 Currently there are 3 maps that can block vault opening: Branch Bank, First World Bank and Go Bank. I will be adding more vaults in future updates (currently working on Big Bank) since they are fairly time consuming and each map's scripting is unique.
 
 There is a player report function which displays each player's information using a keybind. The keybinds correspond to the players (left to right) showing on your hud. Usually I set it up in Mod Keybinds as sequential keys (numpad 1,2,3) corresponding to the player order on the hud, from left to right. You don't have to use this feature, but it is available if you want to inspect players. Currently it is a chat window output, but later I may make it a hud panel. It will display the player's max health and armor values, the weapons they are using and the averaged damage (collected 10 times and averaged), damage interval, skill point verification and whether they are fully verified.
@@ -32,3 +35,25 @@ There is a player report function which displays each player's information using
 The host is subject to the same level of scrutiny (actually more) so cheaters will not be able to host using this mod. It will literally kick them from their own game. I am considering a crimenet filter later so you can prioritize hosts with this mod.
 
 There is no mod menu for the mod, it simply works. 
+
+Notes On The Player Reports function:
+-------------------------------------
+
+Dont forget to set your keybinds in Options > Mod Keybinds. It's best to set keys to sequential (1,2,3) since it displays the hud players from left to right. 
+Some data takes time to populate (must be in-game to prevent hacks) and you may see "..." on some of the stats. Simply reload it in a bit and the values will be there. 
+
+Weapon damage takes the longest to load, since it averages damage over 10 hits before it displays. Most other stats are available the first time the player gets hit.
+Damage interval is collected over time, so initially it will say abnormal, which is normal. If it doesn't settle to normal within short time, then the player has a hacked damage interval. 
+Standard is 0.35 for DW and above, which means you can take damage every 0.35 seconds. Hackers will raise the interval to 1 or 2 seconds and take far less damage as a result.
+The weapon damage is averaged over 10 hits and then compared to an abnormal value, which is typically 6x damage. The likelyhood of this happening is rare, but can happen on strictly crit builds. 
+Players do not get kicked when stat hacks like this occur, but the host does get a warning in the chat window. 
+Automatic kick occurs during game-breaking hacks like opening vaults, spawning bags, or attempting to set an instant or short drill. These particular hacks do have an in-game punishment.
+
+
+
+Changelog
+---------
+
+Version 1.1 5/30/26
+    -fixed an issue with player reports that could show the wrong player
+    -added the ability to trigger overdrill when 4 players are in position only (otherwise it's locked down)
